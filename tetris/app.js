@@ -168,6 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [1,0,0],
         ],
     ]
+    const tetros = [iTetro, jTetro, lTetro, oTetro, sTetro, tTetro, zTetro]
 
     function draw(x, y, tetromino) {
         for (let i = 0; i < tetromino.length; i++) {
@@ -212,51 +213,67 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function moveLeft() {
-        if (isTetrominoColliding(x-1, y, tetro)) return
-        undraw(x, y, tetro)
+        undraw(x, y, tetros[t][r])
         x--
-        draw(x, y, tetro)
+        if (isTetrominoColliding(x, y, tetros[t][r])) x++
+        draw(x, y, tetros[t][r])
     }
 
     function moveRight() {
-        if (isTetrominoColliding(x-1, y, tetro)) return
-        undraw(x, y, tetro)
-        x--
-        draw(x, y, tetro)
+        undraw(x, y, tetros[t][r])
+        x++
+        if (isTetrominoColliding(x, y, tetros[t][r])) x--
+        draw(x, y, tetros[t][r])
     }
 
     function moveDown() {
-        if (y == 18) return;
-        undraw(x, y, tTetro[0])
-        y += 1
-        draw(x, y, tTetro[0])
-    }
-
-    function moveUp() {
-        
+        undraw(x, y, tetros[t][r])
+        y++
+        if (isTetrominoColliding(x, y, tetros[t][r])) {
+            y--;
+            draw(x, y, tetros[t][r])
+            // next tetromino
+            x = 0
+            y = 0
+            r = 0
+            t = (t+1) % tetros.length
+            if (isTetrominoColliding(x, y, tetros[t][r])) {
+                // game over
+                alert('Game over!')
+                clearInterval(timer);
+                return
+            }
+        }
+        draw(x, y, tetros[t][r])
     }
 
     document.addEventListener('keypress', e => {
-        console.log(e.key)
-        if (e.keyCode === 38) {
-
+        if (e.key === 'w') {
+            // place down
         }
-        if (e.key == 'a') {
+        if (e.key === 'a') {
             moveLeft()
         }
-        if (e.key == 's') {
+        if (e.key === 's') {
             moveDown()
         }
-        if (e.key == 'd') {
+        if (e.key === 'd') {
             moveRight()
+        }
+        if (e.key === 'q') {
+            // rotate left
+        }
+        if (e.key === 'e') {
+            // rotate right
         }
     })
 
     let timer = setInterval(tick, 500)
-    let x = 3
-    let y = 4
-    let tetro = tTetro[0]
+    let x = 0
+    let y = 0
+    let r = 0
+    let t = 5
 
-    draw(x, y, tetro)
+    draw(x, y, tetros[t][r])
 
 })
