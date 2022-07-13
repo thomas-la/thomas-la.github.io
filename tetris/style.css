@@ -9,5 +9,9 @@
 .grid div {
     width: 20px;
     height: 20px;
-    background-color: red;
+    /* outline: 4px solid black; */
+}
+
+.tetromino {
+    background-color: blue;
 }
