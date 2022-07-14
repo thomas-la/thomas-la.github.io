@@ -170,29 +170,34 @@ document.addEventListener('DOMContentLoaded', () => {
     ]
     const tetros = [iTetro, jTetro, lTetro, oTetro, sTetro, tTetro, zTetro]
 
-    function draw(x, y, tetromino) {
-        for (let i = 0; i < tetromino.length; i++) {
-            for (let j = 0; j < tetromino[0].length; j++) {
-                if (tetromino[i][j] == 1) {
-                    squares[(y+i)*width + x+j].classList.add('tetromino')
-                }
-            }
-        }
+    const SPAWN_X = 3
+    const SPAWN_Y = 0
+
+    let linesCleared = 0
+    let x, y, r, t
+
+    function spawnTetro() {
+        x = SPAWN_X
+        y = SPAWN_Y
+        r = 0
+        t = Math.floor(Math.random() * tetros.length)
     }
 
-    function undraw(x, y, tetromino) {
-        for (let i = 0; i < tetromino.length; i++) {
-            for (let j = 0; j < tetromino[0].length; j++) {
-                if (tetromino[i][j] == 1) {
-                    squares[(y+i)*width + x+j].classList.remove('tetromino')
-                }
-            }
-        }
+    function set(x, y) {
+        squares[y*width + x].classList.add('tetromino')
+    }
+
+    function unset(x, y) {
+        squares[y*width + x].classList.remove('tetromino')
+    }
+
+    function isSet(x, y) {
+        return squares[y*width+x].classList.contains('tetromino')
     }
 
     function isSquareColliding(x, y) {
         if (x < 0 || x >= width || y < 0 || y >= height) return true
-        return squares[y*width+x].classList.contains('tetromino')
+        return isSet(x, y)
     }
 
     function isTetrominoColliding(x, y, tetromino) {
@@ -203,13 +208,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
         return false;
-        
+    }
+    
+    function draw(x, y, tetromino) {
+        for (let i = 0; i < tetromino.length; i++) {
+            for (let j = 0; j < tetromino[0].length; j++) {
+                if (tetromino[i][j] == 1) {
+                    set(x+j, y+i)
+                }
+            }
+        }
+    }
+
+    function undraw(x, y, tetromino) {
+        for (let i = 0; i < tetromino.length; i++) {
+            for (let j = 0; j < tetromino[0].length; j++) {
+                if (tetromino[i][j] == 1) {
+                    unset(x+j, y+i)
+                }
+            }
+        }
+    }
+
+    function removeLineAndCollapse(line) {
+        for (let i = line; i >= 0; i--) {
+            for (let j = 0; j < width; j++) {
+                if (i != 0 && isSet(j, i-1)) {
+                    set(j, i)
+                } else {
+                    unset(j, i)
+                }
+            }
+        }
     }
 
     function tick() {
         moveDown()
+    }
+
+    function tryMove(action) {
+        undraw(x, y, tetros[t][r])
+        let oldX = x
+        let oldY = y
+        let oldT = t
+        let oldR = r
+        action()
+        if (isTetrominoColliding(x, y, tetros[t][r])) {
+            x = oldX
+            y = oldY
+            t = oldT
+            r = oldR
+        }
+        draw(x, y, tetros[t][r])
     }
 
     function moveLeft() {
@@ -232,11 +283,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (isTetrominoColliding(x, y, tetros[t][r])) {
             y--;
             draw(x, y, tetros[t][r])
+            // check if line completed
+            for (let i = 0; i < tetros[t][r].length && i+y < height; i++) {
+                let filled = true
+                for (let j = 0; j < width; j++) {
+                    filled &= isSet(j, y+i)
+                }
+                if (filled) {
+                    // shift blocks down
+                    removeLineAndCollapse(y+i)
+                    linesCleared++
+                    spanScore.textContent = linesCleared
+                }
+            }
+
             // next tetromino
-            x = 0
-            y = 0
+            x = SPAWN_X
+            y = SPAWN_Y
             r = 0
-            t = (t+1) % tetros.length
+            t = Math.floor(Math.random() * tetros.length)
             if (isTetrominoColliding(x, y, tetros[t][r])) {
                 // game over
                 alert('Game over!')
@@ -247,33 +312,49 @@ document.addEventListener('DOMContentLoaded', () => {
         draw(x, y, tetros[t][r])
     }
 
-    document.addEventListener('keypress', e => {
-        if (e.key === 'w') {
-            // place down
+    function rotateLeft() {
+        undraw(x, y, tetros[t][r])
+        r = (r+tetros[t].length-1) % tetros[t].length
+        if (isTetrominoColliding(x, y, tetros[t][r])) r++
+        draw(x, y, tetros[t][r])
+    }
+
+    function rotateRight() {
+        undraw(x, y, tetros[t][r])
+        r = (r+1) % tetros[t].length
+        if (isTetrominoColliding(x, y, tetros[t][r])) r--
+        draw(x, y, tetros[t][r])
+    }
+
+    document.addEventListener('keydown', e => {
+        if (e.key === 'w' || e.key === 'ArrowUp') {
+            // place down TODO
         }
-        if (e.key === 'a') {
+        if (e.key === 'a' || e.key === 'ArrowLeft') {
             moveLeft()
+            tryMove(() => x--)
         }
-        if (e.key === 's') {
-            moveDown()
+        if (e.key === 's' || e.key === 'ArrowDown') {
+            tryMove(() => y++)
         }
-        if (e.key === 'd') {
-            moveRight()
+        if (e.key === 'd' || e.key === 'ArrowRight') {
+            tryMove(() => x++)
         }
         if (e.key === 'q') {
-            // rotate left
+            tryMove(() => r = (r+tetros[t].length-1) % tetros[t].length)
         }
         if (e.key === 'e') {
-            // rotate right
+            tryMove(() => r = (r+1) % tetros[t].length)
         }
     })
 
     let timer = setInterval(tick, 500)
-    let x = 0
-    let y = 0
-    let r = 0
-    let t = 5
-
+    spawnTetro()
     draw(x, y, tetros[t][r])
 
 })
+
+// TODO
+// refactor move??? maybe keep move Down?
+// next block
+// prettify
