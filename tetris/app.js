@@ -255,7 +255,8 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = line; i >= 0; i--) {
             for (let j = 0; j < width; j++) {
                 if (i != 0 && isSet(j, i-1)) {
-                    set(j, i, getColor(j, i-1))
+                    let color = squares[(i-1)*width + j].style.backgroundColor
+                    set(j, i, color)
                 } else {
                     unset(j, i)
                 }
