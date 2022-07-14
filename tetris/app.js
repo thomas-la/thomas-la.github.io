@@ -1,13 +1,16 @@
 document.addEventListener('DOMContentLoaded', () => {
     const width = 10
-    const height = 20    
-    const grid = document.querySelector('.grid')
+    const height = 20
+    const scoreNode = document.querySelector('#score')
+    const nextTetroNode = document.querySelector('#next-tetro')
+    for (let i = 0; i < 4*2; i++) {
+        nextTetroNode.append(document.createElement('div'))
+    }
+    const grid = document.querySelector('#grid')
     for (let i = 0; i < width*height; i++) {
         grid.append(document.createElement('div'))
     }
-    let squares = Array.from(document.querySelectorAll('.grid div'))
-    const spanScore = document.querySelector('#score')
-    const startButton = document.querySelector('#start-button')
+    let squares = Array.from(document.querySelectorAll('#grid div'))
 
     // https://strategywiki.org/wiki/File:Tetris_rotation_super.png
     const iTetro = [
@@ -169,26 +172,31 @@ document.addEventListener('DOMContentLoaded', () => {
         ],
     ]
     const tetros = [iTetro, jTetro, lTetro, oTetro, sTetro, tTetro, zTetro]
+    const tetrosCol = ['cyan', 'blue', 'orange', 'yellow', 'lime', 'magenta', 'red']
 
     const SPAWN_X = 3
     const SPAWN_Y = 0
 
     let linesCleared = 0
     let x, y, r, t
+    let nextTetro = Math.floor(Math.random() * tetros.length)
 
     function spawnTetro() {
         x = SPAWN_X
         y = SPAWN_Y
         r = 0
-        t = Math.floor(Math.random() * tetros.length)
+        t = nextTetro
+        nextTetro = Math.floor(Math.random() * tetros.length)
     }
 
-    function set(x, y) {
+    function set(x, y, color) {
         squares[y*width + x].classList.add('tetromino')
+        squares[y*width + x].style.backgroundColor = color
     }
 
     function unset(x, y) {
         squares[y*width + x].classList.remove('tetromino')
+        squares[y*width + x].style.backgroundColor = 'transparent'
     }
 
     function isSet(x, y) {
@@ -215,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < tetromino.length; i++) {
             for (let j = 0; j < tetromino[0].length; j++) {
                 if (tetromino[i][j] == 1) {
-                    set(x+j, y+i)
+                    set(x+j, y+i, tetrosCol[t])
                 }
             }
         }
@@ -231,11 +239,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function updateNextTetro() {
+        for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 4 && j < tetros[nextTetro][0][0].length; j++) {
+                if (tetros[nextTetro][0][i][j] == 1) {
+                    //set()
+                } else {
+                    //unset()
+                }
+            }
+        }
+    }
+
     function removeLineAndCollapse(line) {
         for (let i = line; i >= 0; i--) {
             for (let j = 0; j < width; j++) {
                 if (i != 0 && isSet(j, i-1)) {
-                    set(j, i)
+                    set(j, i, getColor(j, i-1))
                 } else {
                     unset(j, i)
                 }
@@ -244,23 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function tick() {
-        moveDown()
-    }
-
-    function tryMove(action) {
-        undraw(x, y, tetros[t][r])
-        let oldX = x
-        let oldY = y
-        let oldT = t
-        let oldR = r
-        action()
-        if (isTetrominoColliding(x, y, tetros[t][r])) {
-            x = oldX
-            y = oldY
-            t = oldT
-            r = oldR
-        }
-        draw(x, y, tetros[t][r])
+        moveDown(false)
     }
 
     function moveLeft() {
@@ -277,9 +281,15 @@ document.addEventListener('DOMContentLoaded', () => {
         draw(x, y, tetros[t][r])
     }
 
-    function moveDown() {
+    function moveDown(place) {
         undraw(x, y, tetros[t][r])
-        y++
+        if (place) {
+            while (!isTetrominoColliding(x, y, tetros[t][r])) {
+                y++
+            }
+        } else {
+            y++
+        }
         if (isTetrominoColliding(x, y, tetros[t][r])) {
             y--;
             draw(x, y, tetros[t][r])
@@ -293,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // shift blocks down
                     removeLineAndCollapse(y+i)
                     linesCleared++
-                    spanScore.textContent = linesCleared
+                    scoreNode.textContent = linesCleared
                 }
             }
 
@@ -328,27 +338,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.addEventListener('keydown', e => {
         if (e.key === 'w' || e.key === 'ArrowUp') {
-            // place down TODO
+            moveDown(true)
         }
         if (e.key === 'a' || e.key === 'ArrowLeft') {
             moveLeft()
-            tryMove(() => x--)
         }
         if (e.key === 's' || e.key === 'ArrowDown') {
-            tryMove(() => y++)
+            moveDown(false)
         }
         if (e.key === 'd' || e.key === 'ArrowRight') {
-            tryMove(() => x++)
+            moveRight()
         }
         if (e.key === 'q') {
-            tryMove(() => r = (r+tetros[t].length-1) % tetros[t].length)
+            rotateLeft()
         }
         if (e.key === 'e') {
-            tryMove(() => r = (r+1) % tetros[t].length)
+            rotateRight()
         }
     })
 
-    let timer = setInterval(tick, 500)
+    let timer = setInterval(tick, 1000)
     spawnTetro()
     draw(x, y, tetros[t][r])
 
