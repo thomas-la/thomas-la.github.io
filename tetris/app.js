@@ -265,87 +265,117 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function tick() {
-        moveDown(false)
+        moveDown()
     }
 
     function moveLeft() {
         undraw(x, y, tetros[t][r])
-        x--
-        if (isTetrominoColliding(x, y, tetros[t][r])) x++
+        if (!isTetrominoColliding(x-1, y, tetros[t][r])) {
+            x--
+        }
         draw(x, y, tetros[t][r])
     }
 
     function moveRight() {
         undraw(x, y, tetros[t][r])
-        x++
-        if (isTetrominoColliding(x, y, tetros[t][r])) x--
+        if (!isTetrominoColliding(x+1, y, tetros[t][r])) {
+            x++
+        }
         draw(x, y, tetros[t][r])
     }
 
-    function moveDown(place) {
-        undraw(x, y, tetros[t][r])
-        if (place) {
-            while (!isTetrominoColliding(x, y, tetros[t][r])) {
-                y++
+    function placeTetro() {  // checks line completion, spawns next tetro
+        draw(x, y, tetros[t][r])
+        // check if line completed
+        for (let i = 0; i < tetros[t][r].length && i+y < height; i++) {
+            let filled = true
+            for (let j = 0; j < width; j++) {
+                filled &= isSet(j, y+i)
             }
+            if (filled) {
+                // shift blocks down
+                removeLineAndCollapse(y+i)
+                linesCleared++
+                scoreNode.textContent = linesCleared
+            }
+        }
+
+        // next tetromino
+        x = SPAWN_X
+        y = SPAWN_Y
+        r = 0
+        t = Math.floor(Math.random() * tetros.length)
+        if (isTetrominoColliding(x, y, tetros[t][r])) {
+            // game over
+            alert('Game over!')
+            clearInterval(timer);
+            return false
+        }
+        return true
+    }
+
+    function moveDown() {
+        undraw(x, y, tetros[t][r])
+        if (!isTetrominoColliding(x, y+1, tetros[t][r])) {
+            y++
         } else {
+            if (!placeTetro()) return
+        }
+        draw(x, y, tetros[t][r])
+    }
+
+    function hardPlace() {
+        undraw(x, y, tetros[t][r])
+        while (!isTetrominoColliding(x, y+1, tetros[t][r])) {
             y++
         }
-        if (isTetrominoColliding(x, y, tetros[t][r])) {
-            y--;
-            draw(x, y, tetros[t][r])
-            // check if line completed
-            for (let i = 0; i < tetros[t][r].length && i+y < height; i++) {
-                let filled = true
-                for (let j = 0; j < width; j++) {
-                    filled &= isSet(j, y+i)
-                }
-                if (filled) {
-                    // shift blocks down
-                    removeLineAndCollapse(y+i)
-                    linesCleared++
-                    scoreNode.textContent = linesCleared
-                }
-            }
-
-            // next tetromino
-            x = SPAWN_X
-            y = SPAWN_Y
-            r = 0
-            t = Math.floor(Math.random() * tetros.length)
-            if (isTetrominoColliding(x, y, tetros[t][r])) {
-                // game over
-                alert('Game over!')
-                clearInterval(timer);
-                return
-            }
-        }
+        if (!placeTetro()) return
         draw(x, y, tetros[t][r])
     }
 
     function rotateLeft() {
         undraw(x, y, tetros[t][r])
         r = (r+tetros[t].length-1) % tetros[t].length
-        if (isTetrominoColliding(x, y, tetros[t][r])) r++
+        if (isTetrominoColliding(x, y, tetros[t][r])) {
+            // wall kick - need to implement Super Rotation System
+            // if (!isTetrominoColliding(x+1, y, tetros[t][r])) {
+            //     x++
+            // } else if (!isTetrominoColliding(x-1, y, tetros[t][r])) {
+            //     x--
+            // } else {
+            //     r = (r+1) % tetros[t].length
+            // }
+            r = (r+1) % tetros[t].length
+        }
         draw(x, y, tetros[t][r])
     }
 
     function rotateRight() {
         undraw(x, y, tetros[t][r])
         r = (r+1) % tetros[t].length
-        if (isTetrominoColliding(x, y, tetros[t][r])) r--
+        if (isTetrominoColliding(x, y, tetros[t][r])) {
+            // wall kick - need to implement Super Rotation System
+            // if (!isTetrominoColliding(x+1, y, tetros[t][r])) {
+            //     x++
+            // } else if (!isTetrominoColliding(x-1, y, tetros[t][r])) {
+            //     x--
+            // } else {
+            //     r = (r+tetros[t].length-1) % tetros[t].length
+            // }
+            r = (r+tetros[t].length-1) % tetros[t].length
+        }
         draw(x, y, tetros[t][r])
     }
 
     document.addEventListener('keydown', e => {
         if (e.key === 'w' || e.key === 'ArrowUp') {
-            moveDown(true)
+            hardPlace()
         }
         if (e.key === 'a' || e.key === 'ArrowLeft') {
             moveLeft()
         }
         if (e.key === 's' || e.key === 'ArrowDown') {
-            moveDown(false)
+            moveDown()
         }
         if (e.key === 'd' || e.key === 'ArrowRight') {
             moveRight()
@@ -365,9 +395,9 @@ document.addEventListener('DOMContentLoaded', () => {
 })
 
 // TODO
-// refactor move??? maybe keep move Down?
 // next block
 // prettify
 // wall kicks
-// fall visualiser
+// fall location visualiser
 // game over
+// speed up
