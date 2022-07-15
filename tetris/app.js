@@ -368,3 +368,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // refactor move??? maybe keep move Down?
 // next block
 // prettify
+// wall kicks
+// fall visualiser
+// game over
